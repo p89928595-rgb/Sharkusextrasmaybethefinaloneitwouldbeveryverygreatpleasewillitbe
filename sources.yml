@@ -1,0 +1,27 @@
+name: sources
+on: workflow_dispatch
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.0
+      - run: gradle genSources --no-daemon
+      - name: Klassen einsammeln
+        run: |
+          JAR=$(find / -name "*sources*.jar" -path "*minecraft*" 2>/dev/null | grep -v sharkus | head -n 1)
+          echo "Gefunden: $JAR"
+          mkdir -p work out
+          cd work && unzip -q "$JAR" && cd ..
+          find work -type f \( -name "ItemEntityRenderer*.java" -o -name "ItemEntityRenderState*.java" -o -name "EntityRenderState.java" -o -name "GameRenderer.java" -o -name "PostChain*.java" -o -name "PostPass*.java" -o -name "ShieldSpecialRenderer*.java" -o -name "LevelRenderer.java" -o -name "SubmitNodeCollector*.java" \) -exec cp {} out/ \;
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-quellen
+          path: out/*
